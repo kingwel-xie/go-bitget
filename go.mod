@@ -1,4 +1,4 @@
-module go-bitget
+module github.com/kingwel-xie/go-bitget
 
 go 1.17
 
