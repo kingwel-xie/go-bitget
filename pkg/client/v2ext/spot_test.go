@@ -2,14 +2,8 @@ package v2ext
 
 import (
 	"fmt"
-	"os"
 	"testing"
 )
-
-func init() {
-	os.Setenv("HTTP_PROXY", "http://127.0.0.1:9999")
-	os.Setenv("HTTPs_PROXY", "http://127.0.0.1:9999")
-}
 
 func TestInfo(t *testing.T) {
 	c := NewSpotClient()
@@ -51,4 +45,24 @@ func TestSavingsAssets(t *testing.T) {
 	c := NewSpotClient()
 	res, _ := c.SavingsAssets("flexible")
 	fmt.Println(res)
+}
+
+func TestSpotTickerStream(t *testing.T) {
+	WsServeTickerStream([]string{"DOTUSDT", "ETHUSDT"}, func(events []SpotTickerEvent) {
+		fmt.Println(events)
+	}, func(err error) {
+		fmt.Println(err)
+	})
+
+	select {}
+}
+
+func TestSpotUserDataStream(t *testing.T) {
+	WsServeDataStream(func(event WsUserDataEvent) {
+		fmt.Println(event)
+	}, func(err error) {
+		fmt.Println(err)
+	})
+
+	select {}
 }

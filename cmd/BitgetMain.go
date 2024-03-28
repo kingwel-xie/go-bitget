@@ -15,18 +15,18 @@ func main() {
 
 	var channelsDef []model.SubscribeReq
 	subReqDef1 := model.SubscribeReq{
-		InstType: "UMCBL",
-		Channel:  "account",
-		InstId:   "default",
+		InstType: "SPOT",
+		Channel:  "ticker",
+		InstId:   "DOTUSDT",
 	}
 	channelsDef = append(channelsDef, subReqDef1)
 	client.SubscribeDef(channelsDef)
 
 	var channels []model.SubscribeReq
 	subReq1 := model.SubscribeReq{
-		InstType: "UMCBL",
-		Channel:  "account",
-		InstId:   "default",
+		InstType: "SPOT",
+		Channel:  "trade",
+		InstId:   "DOTUSDT",
 	}
 	channels = append(channels, subReq1)
 	client.Subscribe(channels, func(message string) {

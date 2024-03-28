@@ -5,7 +5,6 @@ import (
 	"github.com/kingwel-xie/go-bitget/internal/common"
 	"github.com/kingwel-xie/go-bitget/internal/model"
 	"github.com/kingwel-xie/go-bitget/logging/applogger"
-	"strings"
 )
 
 type BitgetWsClient struct {
@@ -13,10 +12,10 @@ type BitgetWsClient struct {
 	NeedLogin          bool
 }
 
-func (p *BitgetWsClient) Init(needLogin bool, listener common.OnReceive, errorListener common.OnReceive) *BitgetWsClient {
-	p.bitgetBaseWsClient = new(common.BitgetBaseWsClient).Init()
+func (p *BitgetWsClient) Init(needLogin bool, listener common.OnReceive, errorListener common.OnError) *BitgetWsClient {
+	p.bitgetBaseWsClient = new(common.BitgetBaseWsClient).Init(needLogin)
 	p.bitgetBaseWsClient.SetListener(listener, errorListener)
-	p.bitgetBaseWsClient.ConnectWebSocket()
+	p.bitgetBaseWsClient.ConnectWebSocket(needLogin)
 	p.bitgetBaseWsClient.StartReadLoop()
 	p.bitgetBaseWsClient.ExecuterPing()
 
@@ -44,11 +43,11 @@ func (p *BitgetWsClient) Connect() *BitgetWsClient {
 func (p *BitgetWsClient) UnSubscribe(list []model.SubscribeReq) {
 
 	var args []interface{}
-	for i := 0; i < len(list); i++ {
-		delete(p.bitgetBaseWsClient.ScribeMap, list[i])
-		p.bitgetBaseWsClient.AllSuribe.Add(list[i])
-		p.bitgetBaseWsClient.AllSuribe.Remove(list[i])
-		args = append(args, list[i])
+	for _, req := range list {
+		delete(p.bitgetBaseWsClient.ScribeMap, req.MakeKey())
+		p.bitgetBaseWsClient.AllSuribe.Add(req)
+		p.bitgetBaseWsClient.AllSuribe.Remove(req)
+		args = append(args, req)
 	}
 
 	wsBaseReq := model.WsBaseReq{
@@ -60,39 +59,24 @@ func (p *BitgetWsClient) UnSubscribe(list []model.SubscribeReq) {
 }
 
 func (p *BitgetWsClient) SubscribeDef(list []model.SubscribeReq) {
-
 	var args []interface{}
-	for i := 0; i < len(list); i++ {
-		req := toUpperReq(list[i])
+	for _, req := range list {
+		req = req.ToCanonical()
 		args = append(args, req)
 	}
 	wsBaseReq := model.WsBaseReq{
 		Op:   constants.WsOpSubscribe,
 		Args: args,
 	}
-
 	p.SendMessageByType(wsBaseReq)
 }
 
-func toUpperReq(req model.SubscribeReq) model.SubscribeReq {
-	req.InstType = strings.ToUpper(req.InstType)
-	req.InstId = strings.ToUpper(req.InstId)
-	req.Channel = strings.ToLower(req.Channel)
-	if "" == req.Coin {
-		req.Coin = strings.ToLower(req.InstId)
-	}
-	return req
-
-}
-
 func (p *BitgetWsClient) Subscribe(list []model.SubscribeReq, listener common.OnReceive) {
-
 	var args []interface{}
-	for i := 0; i < len(list); i++ {
-		req := toUpperReq(list[i])
+	for _, req := range list {
+		req = req.ToCanonical()
 		args = append(args, req)
-
-		p.bitgetBaseWsClient.ScribeMap[req] = listener
+		p.bitgetBaseWsClient.ScribeMap[req.MakeKey()] = listener
 		p.bitgetBaseWsClient.AllSuribe.Add(req)
 		args = append(args, req)
 	}
@@ -100,6 +84,19 @@ func (p *BitgetWsClient) Subscribe(list []model.SubscribeReq, listener common.On
 	wsBaseReq := model.WsBaseReq{
 		Op:   constants.WsOpSubscribe,
 		Args: args,
+	}
+
+	p.bitgetBaseWsClient.SendByType(wsBaseReq)
+}
+
+func (p *BitgetWsClient) SubscribeOne(req model.SubscribeReq, listener common.OnReceive) {
+	req = req.ToCanonical()
+	p.bitgetBaseWsClient.ScribeMap[req.MakeKey()] = listener
+	p.bitgetBaseWsClient.AllSuribe.Add(req)
+
+	wsBaseReq := model.WsBaseReq{
+		Op:   constants.WsOpSubscribe,
+		Args: []interface{}{req},
 	}
 
 	p.bitgetBaseWsClient.SendByType(wsBaseReq)

@@ -5,8 +5,9 @@ import (
 )
 
 var (
-	BaseUrl = "https://api.bitget.com"
-	WsUrl   = "wss://ws.bitget.com/mix/v1/stream"
+	BaseUrl      = "https://api.bitget.com"
+	WsUrl        = "wss://ws.bitget.com/v2/ws/public"
+	WsPrivateUrl = "wss://ws.bitget.com/v2/ws/private"
 
 	ApiKey        = "bg_b85913f93946232babbc8badba3f1d60"
 	SecretKey     = ""

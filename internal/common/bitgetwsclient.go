@@ -18,21 +18,22 @@ type BitgetBaseWsClient struct {
 	Connection       bool
 	LoginStatus      bool
 	Listener         OnReceive
-	ErrorListener    OnReceive
+	ErrorListener    OnError
 	Ticker           *time.Ticker
 	SendMutex        *sync.Mutex
 	WebSocketClient  *websocket.Conn
 	LastReceivedTime time.Time
 	AllSuribe        *model.Set
 	Signer           *Signer
-	ScribeMap        map[model.SubscribeReq]OnReceive
+	ScribeMap        map[string]OnReceive
 }
 
-func (p *BitgetBaseWsClient) Init() *BitgetBaseWsClient {
+func (p *BitgetBaseWsClient) Init(needLogin bool) *BitgetBaseWsClient {
+	p.NeedLogin = needLogin
 	p.Connection = false
 	p.AllSuribe = model.NewSet()
 	p.Signer = new(Signer).Init(config.SecretKey)
-	p.ScribeMap = make(map[model.SubscribeReq]OnReceive)
+	p.ScribeMap = make(map[string]OnReceive)
 	p.SendMutex = &sync.Mutex{}
 	p.Ticker = time.NewTicker(constants.TimerIntervalSecond * time.Second)
 	p.LastReceivedTime = time.Now()
@@ -40,7 +41,7 @@ func (p *BitgetBaseWsClient) Init() *BitgetBaseWsClient {
 	return p
 }
 
-func (p *BitgetBaseWsClient) SetListener(msgListener OnReceive, errorListener OnReceive) {
+func (p *BitgetBaseWsClient) SetListener(msgListener OnReceive, errorListener OnError) {
 	p.Listener = msgListener
 	p.ErrorListener = errorListener
 }
@@ -51,10 +52,14 @@ func (p *BitgetBaseWsClient) Connect() {
 	p.ExecuterPing()
 }
 
-func (p *BitgetBaseWsClient) ConnectWebSocket() {
+func (p *BitgetBaseWsClient) ConnectWebSocket(isPrivate bool) {
 	var err error
 	applogger.Info("WebSocket connecting...")
-	p.WebSocketClient, _, err = websocket.DefaultDialer.Dial(config.WsUrl, nil)
+	var url = config.WsUrl
+	if isPrivate {
+		url = config.WsPrivateUrl
+	}
+	p.WebSocketClient, _, err = websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
 		fmt.Printf("WebSocket connected error: %s\n", err)
 		return
@@ -109,7 +114,7 @@ func (p *BitgetBaseWsClient) Send(data string) {
 		applogger.Error("WebSocket sent error: no connection available")
 		return
 	}
-	applogger.Info("sendMessage:%s", data)
+	applogger.Debug("sendMessage:%s", data)
 	p.SendMutex.Lock()
 	err := p.WebSocketClient.WriteMessage(websocket.TextMessage, []byte(data))
 	p.SendMutex.Unlock()
@@ -128,7 +133,7 @@ func (p *BitgetBaseWsClient) tickerLoop() {
 			if elapsedSecond > constants.ReconnectWaitSecond {
 				applogger.Info("WebSocket reconnect...")
 				p.disconnectWebSocket()
-				p.ConnectWebSocket()
+				p.ConnectWebSocket(p.NeedLogin)
 			}
 		}
 	}
@@ -139,7 +144,7 @@ func (p *BitgetBaseWsClient) disconnectWebSocket() {
 		return
 	}
 
-	fmt.Println("WebSocket disconnecting...")
+	applogger.Info("WebSocket disconnecting...")
 	err := p.WebSocketClient.Close()
 	if err != nil {
 		applogger.Error("WebSocket disconnect error: %s\n", err)
@@ -150,8 +155,21 @@ func (p *BitgetBaseWsClient) disconnectWebSocket() {
 }
 
 func (p *BitgetBaseWsClient) ReadLoop() {
-	for {
 
+	// Wait for the stopC channel to be closed.  We do that in a
+	// separate goroutine because ReadMessage is a blocking
+	// operation.
+	silent := false
+	//go func() {
+	//	select {
+	//	case <-stopC:
+	//		silent = true
+	//	case <-doneC:
+	//	}
+	//	c.Close()
+	//}()
+
+	for {
 		if p.WebSocketClient == nil {
 			applogger.Info("Read error: no connection available")
 			//time.Sleep(TimerIntervalSecond * time.Second)
@@ -163,21 +181,24 @@ func (p *BitgetBaseWsClient) ReadLoop() {
 			applogger.Info("Read error: %s", err)
 			continue
 		}
+		if err != nil {
+			if !silent {
+				p.ErrorListener(err)
+			}
+			return
+		}
 		p.LastReceivedTime = time.Now()
 		message := string(buf)
 
-		applogger.Info("rev:" + message)
-
 		if message == "pong" {
-			applogger.Info("Keep connected:" + message)
+			applogger.Debug("Keep connected:" + message)
 			continue
 		}
 		jsonMap := internal.JSONToMap(message)
 
 		v, e := jsonMap["code"]
-
 		if e && int(v.(float64)) != 0 {
-			p.ErrorListener(message)
+			p.ErrorListener(fmt.Errorf("error, code %v", v))
 			continue
 		}
 
@@ -200,24 +221,17 @@ func (p *BitgetBaseWsClient) ReadLoop() {
 }
 
 func (p *BitgetBaseWsClient) GetListener(argJson interface{}) OnReceive {
-
 	mapData := argJson.(map[string]interface{})
-
-	subscribeReq := model.SubscribeReq{
-		InstType: fmt.Sprintf("%v", mapData["instType"]),
-		Channel:  fmt.Sprintf("%v", mapData["channel"]),
-		InstId:   fmt.Sprintf("%v", mapData["instId"]),
-	}
-
-	v, e := p.ScribeMap[subscribeReq]
-
+	key := fmt.Sprintf("%s%s", mapData["instType"], mapData["channel"])
+	v, e := p.ScribeMap[key]
 	if !e {
 		return p.Listener
 	}
 	return v
 }
 
-type OnReceive func(message string)
+type OnReceive func(string)
+type OnError func(error)
 
 func (p *BitgetBaseWsClient) handleMessage(msg string) {
 	fmt.Println("default:" + msg)
