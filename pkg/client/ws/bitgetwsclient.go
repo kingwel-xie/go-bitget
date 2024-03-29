@@ -12,11 +12,14 @@ type BitgetWsClient struct {
 	NeedLogin          bool
 }
 
-func (p *BitgetWsClient) Init(needLogin bool, listener common.OnReceive, errorListener common.OnError) *BitgetWsClient {
+func (p *BitgetWsClient) Init(needLogin bool, listener common.OnReceive, errorListener common.OnError) (*BitgetWsClient, chan struct{}, error) {
 	p.bitgetBaseWsClient = new(common.BitgetBaseWsClient).Init(needLogin)
 	p.bitgetBaseWsClient.SetListener(listener, errorListener)
-	p.bitgetBaseWsClient.ConnectWebSocket(needLogin)
-	p.bitgetBaseWsClient.StartReadLoop()
+	err := p.bitgetBaseWsClient.ConnectWebSocket(needLogin)
+	if err != nil {
+		return nil, nil, err
+	}
+	ch := p.bitgetBaseWsClient.StartReadLoop()
 	p.bitgetBaseWsClient.ExecuterPing()
 
 	if needLogin {
@@ -31,7 +34,7 @@ func (p *BitgetWsClient) Init(needLogin bool, listener common.OnReceive, errorLi
 		applogger.Info("login in ... success")
 	}
 
-	return p
+	return p, ch, nil
 
 }
 

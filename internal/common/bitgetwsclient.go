@@ -52,7 +52,7 @@ func (p *BitgetBaseWsClient) Connect() {
 	p.ExecuterPing()
 }
 
-func (p *BitgetBaseWsClient) ConnectWebSocket(isPrivate bool) {
+func (p *BitgetBaseWsClient) ConnectWebSocket(isPrivate bool) error {
 	var err error
 	applogger.Info("WebSocket connecting...")
 	var url = config.WsUrl
@@ -61,11 +61,12 @@ func (p *BitgetBaseWsClient) ConnectWebSocket(isPrivate bool) {
 	}
 	p.WebSocketClient, _, err = websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
-		fmt.Printf("WebSocket connected error: %s\n", err)
-		return
+		applogger.Error("WebSocket connected error: %s\n", err)
+		return err
 	}
 	applogger.Info("WebSocket connected")
 	p.Connection = true
+	return nil
 }
 
 func (p *BitgetBaseWsClient) Login() {
@@ -91,8 +92,10 @@ func (p *BitgetBaseWsClient) Login() {
 	p.SendByType(baseReq)
 }
 
-func (p *BitgetBaseWsClient) StartReadLoop() {
-	go p.ReadLoop()
+func (p *BitgetBaseWsClient) StartReadLoop() chan struct{} {
+	ctrlCh := make(chan struct{})
+	go p.ReadLoop(ctrlCh)
+	return ctrlCh
 }
 
 func (p *BitgetBaseWsClient) ExecuterPing() {
@@ -154,20 +157,17 @@ func (p *BitgetBaseWsClient) disconnectWebSocket() {
 	applogger.Info("WebSocket disconnected")
 }
 
-func (p *BitgetBaseWsClient) ReadLoop() {
-
-	// Wait for the stopC channel to be closed.  We do that in a
-	// separate goroutine because ReadMessage is a blocking
-	// operation.
+func (p *BitgetBaseWsClient) ReadLoop(ctrlCh chan struct{}) {
+	// Wait for the channel to be closed.  ReadMessage is a blocking operation, so we do
+	// it in a separated routine
 	silent := false
-	//go func() {
-	//	select {
-	//	case <-stopC:
-	//		silent = true
-	//	case <-doneC:
-	//	}
-	//	c.Close()
-	//}()
+	go func() {
+		select {
+		case <-ctrlCh:
+			silent = true
+		}
+		p.WebSocketClient.Close()
+	}()
 
 	for {
 		if p.WebSocketClient == nil {

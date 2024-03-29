@@ -1,55 +1,33 @@
 package applogger
 
-import (
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"os"
-)
+var logger Logger = &DefaultLogger{level: DebugLevel}
 
-var sugaredLogger *zap.SugaredLogger
-var atomicLevel zap.AtomicLevel
-
-func init() {
-	encoderCfg := zapcore.EncoderConfig{
-		TimeKey:     "time",
-		MessageKey:  "msg",
-		LevelKey:    "level",
-		EncodeLevel: zapcore.CapitalColorLevelEncoder,
-		EncodeTime:  zapcore.ISO8601TimeEncoder,
-	}
-
-	// define default level as debug level
-	atomicLevel = zap.NewAtomicLevel()
-	atomicLevel.SetLevel(zapcore.DebugLevel)
-
-	core := zapcore.NewCore(zapcore.NewConsoleEncoder(encoderCfg), os.Stdout, atomicLevel)
-	sugaredLogger = zap.New(core).Sugar()
+// SetLogger sets the current logger.
+func SetLogger(l Logger) {
+	logger = l
 }
 
-func SetLevel(level zapcore.Level) {
-	atomicLevel.SetLevel(level)
-}
-
-func Fatal(template string, args ...interface{}) {
-	sugaredLogger.Fatalf(template, args...)
+// GetLogger returns the current logger.
+func GetLogger() Logger {
+	return logger
 }
 
 func Error(template string, args ...interface{}) {
-	sugaredLogger.Errorf(template, args...)
+	logger.Errorf(template, args...)
 }
 
 func Panic(template string, args ...interface{}) {
-	sugaredLogger.Panicf(template, args...)
+	logger.Panicf(template, args...)
 }
 
 func Warn(template string, args ...interface{}) {
-	sugaredLogger.Warnf(template, args...)
+	logger.Warnf(template, args...)
 }
 
 func Info(template string, args ...interface{}) {
-	sugaredLogger.Infof(template, args...)
+	logger.Infof(template, args...)
 }
 
 func Debug(template string, args ...interface{}) {
-	sugaredLogger.Debugf(template, args...)
+	logger.Debugf(template, args...)
 }

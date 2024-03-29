@@ -12,13 +12,33 @@ import (
 )
 
 func TimesStamp() string {
-	timesStamp := time.Now().Unix() * 1000
+	timesStamp := time.Now().UnixMilli()
 	return strconv.FormatInt(timesStamp, 10)
 }
 
 func TimesStampSec() string {
 	timesStamp := time.Now().Unix()
 	return strconv.FormatInt(timesStamp, 10)
+}
+
+func String2Int64(intStr string, args ...int) int64 {
+	v, err := strconv.ParseInt(intStr, 10, 64)
+	if err != nil && len(args) > 0 {
+		v = int64(args[0])
+	}
+	return v
+}
+
+func String2Int(intStr string, args ...int) int {
+	return int(String2Int64(intStr, args...))
+}
+
+func String2Float(floatInString string, args ...float64) float64 {
+	num, err := strconv.ParseFloat(floatInString, 64)
+	if err != nil && len(args) > 0 {
+		num = args[0]
+	}
+	return num
 }
 
 /**

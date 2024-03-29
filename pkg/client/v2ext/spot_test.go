@@ -5,15 +5,27 @@ import (
 	"testing"
 )
 
-func TestInfo(t *testing.T) {
+func TestAccountInfo(t *testing.T) {
 	c := NewSpotClient()
-	res, _ := c.Info()
+	res, _ := c.AccountInfo()
 	fmt.Println(res)
 }
 
 func TestUserAssets(t *testing.T) {
 	c := NewSpotClient()
 	res, _ := c.Assets("hold_only")
+	fmt.Println(res)
+}
+
+func TestSpotCoins(t *testing.T) {
+	c := NewSpotClient()
+	res, _ := c.Coins("")
+	fmt.Println(res)
+}
+
+func TestSpotSymbols(t *testing.T) {
+	c := NewSpotClient()
+	res, _ := c.Symbols("")
 	fmt.Println(res)
 }
 
@@ -26,6 +38,12 @@ func TestTransfer(t *testing.T) {
 func TestSpotTicker(t *testing.T) {
 	c := NewSpotClient()
 	res, _ := c.Tickers("DOTUSDT")
+	fmt.Println(res)
+}
+
+func TestSpotCandles(t *testing.T) {
+	c := NewSpotClient()
+	res, _ := c.Candles("DOTUSDT", "1m", 0, 0, 1000)
 	fmt.Println(res)
 }
 

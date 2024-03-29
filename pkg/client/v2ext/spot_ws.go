@@ -29,7 +29,7 @@ type SpotTickerEvent struct {
 // WsTickerHandler handle ticker event
 type WsTickerHandler func([]SpotTickerEvent)
 
-func WsServeTickerStream(symbols []string, handler WsTickerHandler, errHandler ErrHandler) {
+func WsServeTickerStream(symbols []string, handler WsTickerHandler, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(message string) {
 		var event struct {
 			GenericMessage
@@ -42,8 +42,10 @@ func WsServeTickerStream(symbols []string, handler WsTickerHandler, errHandler E
 		}
 		handler(event.Data)
 	}
-
-	client := new(ws.BitgetWsClient).Init(false, wsHandler, common.OnError(errHandler))
+	client, ch, err := new(ws.BitgetWsClient).Init(false, wsHandler, common.OnError(errHandler))
+	if err != nil {
+		return nil, err
+	}
 
 	var channelsDef []model.SubscribeReq
 	for _, s := range symbols {
@@ -55,22 +57,7 @@ func WsServeTickerStream(symbols []string, handler WsTickerHandler, errHandler E
 		channelsDef = append(channelsDef, req)
 	}
 	client.SubscribeDef(channelsDef)
-
-	//var channels []model.SubscribeReq
-	//subReq1 := model.SubscribeReq{
-	//	InstType: "SPOT",
-	//	Channel:  "trade",
-	//	InstId:   "DOTUSDT",
-	//}
-	//channels = append(channels, subReq1)
-	//client.Subscribe(channels, func(message string) {
-	//	fmt.Println("appoint:" + message)
-	//})
-	fmt.Println("Press ENTER to unsubscribe and stop...")
-
-	//client.Connect()
-	//
-	select {}
+	return ch, nil
 }
 
 type AccountUpdateEvent struct {
@@ -144,12 +131,15 @@ type WsUserDataEvent struct {
 // WsUserDataHandler handle user data event
 type WsUserDataHandler func(WsUserDataEvent)
 
-func WsServeDataStream(handler WsUserDataHandler, errHandler ErrHandler) {
+func WsServeDataStream(handler WsUserDataHandler, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(message string) {
 		fmt.Println(message)
 	}
 
-	client := new(ws.BitgetWsClient).Init(true, wsHandler, common.OnError(errHandler))
+	client, ch, err := new(ws.BitgetWsClient).Init(true, wsHandler, common.OnError(errHandler))
+	if err != nil {
+		return nil, err
+	}
 
 	wsAccountHandler := func(message string) {
 		var event struct {
@@ -225,4 +215,6 @@ func WsServeDataStream(handler WsUserDataHandler, errHandler ErrHandler) {
 		InstId:   "default",
 	}
 	client.SubscribeOne(req, wsFillHandler)
+
+	return ch, nil
 }

@@ -116,7 +116,7 @@ func (p *MixClient) CurrentFundingRate(productType string, symbol string) ([]*Fu
 	return temp.Data, err
 }
 
-type TickerEntry struct {
+type MixTickerEntry struct {
 	Symbol            string      `json:"symbol"`
 	LastPr            string      `json:"lastPr"`
 	AskPr             string      `json:"askPr"`
@@ -141,7 +141,7 @@ type TickerEntry struct {
 	Open24H           string      `json:"open24h"`
 }
 
-func (p *MixClient) Ticker(productType string, symbol string) ([]*TickerEntry, error) {
+func (p *MixClient) Ticker(productType string, symbol string) ([]*MixTickerEntry, error) {
 	params := map[string]string{
 		"productType": productType,
 		"symbol":      symbol,
@@ -153,7 +153,7 @@ func (p *MixClient) Ticker(productType string, symbol string) ([]*TickerEntry, e
 
 	var temp struct {
 		Response
-		Data []*TickerEntry
+		Data []*MixTickerEntry
 	}
 	err = json.Unmarshal([]byte(resp), &temp)
 	if err != nil {
@@ -162,7 +162,7 @@ func (p *MixClient) Ticker(productType string, symbol string) ([]*TickerEntry, e
 	return temp.Data, nil
 }
 
-func (p *MixClient) Tickers(productType string) ([]*TickerEntry, error) {
+func (p *MixClient) Tickers(productType string) ([]*MixTickerEntry, error) {
 	params := map[string]string{
 		"productType": productType,
 	}
@@ -174,7 +174,7 @@ func (p *MixClient) Tickers(productType string) ([]*TickerEntry, error) {
 
 	var temp struct {
 		Response
-		Data []*TickerEntry
+		Data []*MixTickerEntry
 	}
 	err = json.Unmarshal([]byte(resp), &temp)
 	if err != nil {

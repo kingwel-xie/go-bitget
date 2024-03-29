@@ -16,7 +16,7 @@ type AccountInfo struct {
 	RegisTime   int64    `json:"regisTime,string"`
 }
 
-func (p *SpotClient) Info() (*AccountInfo, error) {
+func (p *SpotClient) AccountInfo() (*AccountInfo, error) {
 	resp, err := p.DoGet("/api/v2/spot/account/info", nil)
 	if err != nil {
 		return nil, err
