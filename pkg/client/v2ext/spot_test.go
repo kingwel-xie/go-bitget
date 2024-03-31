@@ -3,6 +3,7 @@ package v2ext
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 func TestAccountInfo(t *testing.T) {
@@ -43,7 +44,7 @@ func TestSpotTicker(t *testing.T) {
 
 func TestSpotCandles(t *testing.T) {
 	c := NewSpotClient()
-	res, _ := c.Candles("DOTUSDT", "1m", 0, 0, 1000)
+	res, _ := c.Candles("DOTUSDT", "1min", 0, 0, 1000)
 	fmt.Println(res)
 }
 
@@ -76,11 +77,16 @@ func TestSpotTickerStream(t *testing.T) {
 }
 
 func TestSpotUserDataStream(t *testing.T) {
-	WsServeDataStream(func(event WsUserDataEvent) {
+	ch, err := WsServeDataStream(func(event WsUserDataEvent) {
 		fmt.Println(event)
 	}, func(err error) {
 		fmt.Println(err)
 	})
+	if err != nil {
+		return
+	}
 
-	select {}
+	time.Sleep(20 * time.Second)
+	close(ch)
+	time.Sleep(1 * time.Second)
 }

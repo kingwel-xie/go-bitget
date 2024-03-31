@@ -158,6 +158,12 @@ func (p *BitgetBaseWsClient) disconnectWebSocket() {
 }
 
 func (p *BitgetBaseWsClient) ReadLoop(ctrlCh chan struct{}) {
+	if p.WebSocketClient == nil {
+		applogger.Info("Read error: no connection available")
+		//time.Sleep(TimerIntervalSecond * time.Second)
+		return
+	}
+
 	// Wait for the channel to be closed.  ReadMessage is a blocking operation, so we do
 	// it in a separated routine
 	silent := false
@@ -170,18 +176,9 @@ func (p *BitgetBaseWsClient) ReadLoop(ctrlCh chan struct{}) {
 	}()
 
 	for {
-		if p.WebSocketClient == nil {
-			applogger.Info("Read error: no connection available")
-			//time.Sleep(TimerIntervalSecond * time.Second)
-			continue
-		}
-
 		_, buf, err := p.WebSocketClient.ReadMessage()
 		if err != nil {
 			applogger.Info("Read error: %s", err)
-			continue
-		}
-		if err != nil {
 			if !silent {
 				p.ErrorListener(err)
 			}

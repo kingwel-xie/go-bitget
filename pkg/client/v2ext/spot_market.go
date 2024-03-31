@@ -136,13 +136,11 @@ type CandleItem struct {
 	UsdtVolume  float64
 }
 
+// Candles returns k-lines data, granularity: [1min,5min,15min,30min,1h,4h,6h,12h,1day,1week,1M,6Hutc,12Hutc,1Dutc,3Dutc,1Wutc,1Mutc]
 func (p *SpotClient) Candles(symbol, granularity string, startTime, endTime int64, limit int) ([]*CandleItem, error) {
 	params := map[string]string{
 		"symbol":      symbol,
 		"granularity": granularity,
-		"startTime":   strconv.FormatInt(startTime, 10),
-		"endTime":     strconv.FormatInt(endTime, 10),
-		"limit":       strconv.Itoa(limit),
 	}
 	if startTime > 0 {
 		params["startTime"] = strconv.FormatInt(startTime, 10)
@@ -169,7 +167,7 @@ func (p *SpotClient) Candles(symbol, granularity string, startTime, endTime int6
 
 	var list []*CandleItem
 	for _, i := range temp.Data {
-		if len(i) != 7 {
+		if len(i) != 8 {
 			// skip invalid data
 			continue
 		}

@@ -1,6 +1,8 @@
 package common
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/kingwel-xie/go-bitget/config"
 	"github.com/kingwel-xie/go-bitget/constants"
 	"github.com/kingwel-xie/go-bitget/internal"
@@ -81,18 +83,36 @@ func (p *BitgetRestClient) DoGet(uri string, params map[string]string) (string, 
 	internal.Headers(request, p.ApiKey, timesStamp, sign, p.Passphrase)
 
 	response, err := p.HttpClient.Do(request)
-
 	if err != nil {
 		return "", err
 	}
 
 	defer response.Body.Close()
-
 	bodyStr, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return "", err
 	}
-
+	if response.StatusCode >= http.StatusBadRequest {
+		apiErr := new(APIError)
+		e := json.Unmarshal(bodyStr, apiErr)
+		if e != nil {
+			apiErr.Code = "19000"
+			apiErr.Msg = string(bodyStr)
+		}
+		return "", apiErr
+	}
 	responseBodyString := string(bodyStr)
 	return responseBodyString, err
+}
+
+// APIError define API error when response status is 4xx or 5xx
+type APIError struct {
+	Code        string `json:"code"`
+	Msg         string `json:"msg"`
+	RequestTime int64  `json:"requestTime"`
+}
+
+// Error return error code and message
+func (e APIError) Error() string {
+	return fmt.Sprintf("<APIError> code=%s, msg=%s", e.Code, e.Msg)
 }
