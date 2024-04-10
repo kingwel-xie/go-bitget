@@ -8,57 +8,58 @@ import (
 	"github.com/kingwel-xie/go-bitget/pkg/client/ws"
 )
 
-type SpotTickerEvent struct {
-	InstID       string `json:"instId"`
-	LastPr       string `json:"lastPr"`
-	Open24H      string `json:"open24h"`
-	High24H      string `json:"high24h"`
-	Low24H       string `json:"low24h"`
-	Change24H    string `json:"change24h"`
-	BidPr        string `json:"bidPr"`
-	AskPr        string `json:"askPr"`
-	BidSz        string `json:"bidSz"`
-	AskSz        string `json:"askSz"`
-	BaseVolume   string `json:"baseVolume"`
-	QuoteVolume  string `json:"quoteVolume"`
-	OpenUtc      string `json:"openUtc"`
-	ChangeUtc24H string `json:"changeUtc24h"`
-	Ts           int64  `json:"ts,string"`
-}
-
-// WsTickerHandler handle ticker event
-type WsTickerHandler func([]SpotTickerEvent)
-
-func WsServeTickerStream(symbols []string, handler WsTickerHandler, errHandler ErrHandler) (chan struct{}, error) {
-	wsHandler := func(message string) {
-		var event struct {
-			GenericMessage
-			Data []SpotTickerEvent `json:"data"`
-		}
-		err := json.Unmarshal([]byte(message), &event)
-		if err != nil {
-			errHandler(err)
-			return
-		}
-		handler(event.Data)
-	}
-	client, ch, err := new(ws.BitgetWsClient).Init(false, wsHandler, common.OnError(errHandler))
-	if err != nil {
-		return nil, err
-	}
-
-	var channelsDef []model.SubscribeReq
-	for _, s := range symbols {
-		req := model.SubscribeReq{
-			InstType: "SPOT",
-			Channel:  "ticker",
-			InstId:   s,
-		}
-		channelsDef = append(channelsDef, req)
-	}
-	client.SubscribeDef(channelsDef)
-	return ch, nil
-}
+//
+//type SpotTickerEvent struct {
+//	InstID       string `json:"instId"`
+//	LastPr       string `json:"lastPr"`
+//	Open24H      string `json:"open24h"`
+//	High24H      string `json:"high24h"`
+//	Low24H       string `json:"low24h"`
+//	Change24H    string `json:"change24h"`
+//	BidPr        string `json:"bidPr"`
+//	AskPr        string `json:"askPr"`
+//	BidSz        string `json:"bidSz"`
+//	AskSz        string `json:"askSz"`
+//	BaseVolume   string `json:"baseVolume"`
+//	QuoteVolume  string `json:"quoteVolume"`
+//	OpenUtc      string `json:"openUtc"`
+//	ChangeUtc24H string `json:"changeUtc24h"`
+//	Ts           int64  `json:"ts,string"`
+//}
+//
+//// WsTickerHandler handle ticker event
+//type WsTickerHandler func([]SpotTickerEvent)
+//
+//func WsServeTickerStream(symbols []string, handler WsTickerHandler, errHandler ErrHandler) (chan struct{}, chan struct{}, error) {
+//	wsHandler := func(message string) {
+//		var event struct {
+//			GenericMessage
+//			Data []SpotTickerEvent `json:"data"`
+//		}
+//		err := json.Unmarshal([]byte(message), &event)
+//		if err != nil {
+//			errHandler(err)
+//			return
+//		}
+//		handler(event.Data)
+//	}
+//	client, doneCh, ctrlCh, err := new(ws.BitgetWsClient).Init(false, wsHandler, common.OnError(errHandler))
+//	if err != nil {
+//		return nil, nil, err
+//	}
+//
+//	var channelsDef []model.SubscribeReq
+//	for _, s := range symbols {
+//		req := model.SubscribeReq{
+//			InstType: "SPOT",
+//			Channel:  "ticker",
+//			InstId:   s,
+//		}
+//		channelsDef = append(channelsDef, req)
+//	}
+//	client.SubscribeDef(channelsDef)
+//	return doneCh, ctrlCh, nil
+//}
 
 type AccountUpdateEvent struct {
 	Coin           string `json:"coin"`
@@ -131,14 +132,14 @@ type WsUserDataEvent struct {
 // WsUserDataHandler handle user data event
 type WsUserDataHandler func(WsUserDataEvent)
 
-func WsServeDataStream(handler WsUserDataHandler, errHandler ErrHandler) (chan struct{}, error) {
+func WsServeDataStream(handler WsUserDataHandler, errHandler ErrHandler) (chan struct{}, chan struct{}, error) {
 	wsHandler := func(message string) {
 		fmt.Println(message)
 	}
 
-	client, ch, err := new(ws.BitgetWsClient).Init(true, wsHandler, common.OnError(errHandler))
+	client, doneCh, ctrlCh, err := new(ws.BitgetWsClient).Init(true, wsHandler, common.OnError(errHandler))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	wsAccountHandler := func(message string) {
@@ -216,5 +217,5 @@ func WsServeDataStream(handler WsUserDataHandler, errHandler ErrHandler) (chan s
 	}
 	client.SubscribeOne(req, wsFillHandler)
 
-	return ch, nil
+	return doneCh, ctrlCh, nil
 }

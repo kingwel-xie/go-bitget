@@ -92,10 +92,11 @@ func (p *BitgetBaseWsClient) Login() {
 	p.SendByType(baseReq)
 }
 
-func (p *BitgetBaseWsClient) StartReadLoop() chan struct{} {
+func (p *BitgetBaseWsClient) StartReadLoop() (chan struct{}, chan struct{}) {
+	doneCh := make(chan struct{})
 	ctrlCh := make(chan struct{})
-	go p.ReadLoop(ctrlCh)
-	return ctrlCh
+	go p.ReadLoop(doneCh, ctrlCh)
+	return doneCh, ctrlCh
 }
 
 func (p *BitgetBaseWsClient) ExecuterPing() {
@@ -157,7 +158,10 @@ func (p *BitgetBaseWsClient) disconnectWebSocket() {
 	applogger.Info("WebSocket disconnected")
 }
 
-func (p *BitgetBaseWsClient) ReadLoop(ctrlCh chan struct{}) {
+func (p *BitgetBaseWsClient) ReadLoop(doneCh chan struct{}, ctrlCh chan struct{}) {
+	// anyway, either ReadMessage returns error or ctrlCh is closed externally, we have to close doneCh
+	defer close(doneCh)
+
 	if p.WebSocketClient == nil {
 		applogger.Info("Read error: no connection available")
 		//time.Sleep(TimerIntervalSecond * time.Second)
@@ -171,6 +175,7 @@ func (p *BitgetBaseWsClient) ReadLoop(ctrlCh chan struct{}) {
 		select {
 		case <-ctrlCh:
 			silent = true
+		case <-doneCh:
 		}
 		p.WebSocketClient.Close()
 	}()
@@ -231,5 +236,5 @@ type OnReceive func(string)
 type OnError func(error)
 
 func (p *BitgetBaseWsClient) handleMessage(msg string) {
-	fmt.Println("default:" + msg)
+	//fmt.Println("default:" + msg)
 }

@@ -67,7 +67,7 @@ func TestSavingsAssets(t *testing.T) {
 }
 
 func TestSpotTickerStream(t *testing.T) {
-	WsServeTickerStream([]string{"DOTUSDT", "ETHUSDT"}, func(events []SpotTickerEvent) {
+	WsServeTickerStream("SPOT", []string{"DOTUSDT", "ETHUSDT"}, func(events []TickerEvent) {
 		fmt.Println(events)
 	}, func(err error) {
 		fmt.Println(err)
@@ -77,7 +77,7 @@ func TestSpotTickerStream(t *testing.T) {
 }
 
 func TestSpotUserDataStream(t *testing.T) {
-	ch, err := WsServeDataStream(func(event WsUserDataEvent) {
+	ch, ctrlCh, err := WsServeDataStream(func(event WsUserDataEvent) {
 		fmt.Println(event)
 	}, func(err error) {
 		fmt.Println(err)
@@ -87,6 +87,6 @@ func TestSpotUserDataStream(t *testing.T) {
 	}
 
 	time.Sleep(20 * time.Second)
-	close(ch)
-	time.Sleep(1 * time.Second)
+	close(ctrlCh)
+	<-ch
 }

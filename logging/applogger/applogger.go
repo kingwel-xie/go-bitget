@@ -1,6 +1,6 @@
 package applogger
 
-var logger Logger = &DefaultLogger{level: DebugLevel}
+var logger Logger = &DefaultLogger{level: InfoLevel}
 
 // SetLogger sets the current logger.
 func SetLogger(l Logger) {
