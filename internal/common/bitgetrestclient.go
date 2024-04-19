@@ -62,7 +62,15 @@ func (p *BitgetRestClient) DoPost(uri string, params string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
+	if response.StatusCode >= http.StatusBadRequest {
+		apiErr := new(APIError)
+		e := json.Unmarshal(bodyStr, apiErr)
+		if e != nil {
+			apiErr.Code = "18000"
+			apiErr.Msg = string(bodyStr)
+		}
+		return "", apiErr
+	}
 	responseBodyString := string(bodyStr)
 	return responseBodyString, err
 }

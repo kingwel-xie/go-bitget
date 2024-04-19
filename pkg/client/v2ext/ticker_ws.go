@@ -19,7 +19,7 @@ type TickerEvent struct {
 	Low24H          string `json:"low24h"`
 	Change24H       string `json:"change24h"`
 	FundingRate     string `json:"fundingRate"`
-	NextFundingTime string `json:"nextFundingTime"`
+	NextFundingTime int64  `json:"nextFundingTime,string"`
 	MarkPrice       string `json:"markPrice"`
 	IndexPrice      string `json:"indexPrice"`
 	HoldingAmount   string `json:"holdingAmount"`
