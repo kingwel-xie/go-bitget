@@ -5,6 +5,7 @@ import (
 	"github.com/kingwel-xie/go-bitget/internal/common"
 	"github.com/kingwel-xie/go-bitget/internal/model"
 	"github.com/kingwel-xie/go-bitget/logging/applogger"
+	"time"
 )
 
 type BitgetWsClient struct {
@@ -27,6 +28,8 @@ func (p *BitgetWsClient) Init(needLogin bool, listener common.OnReceive, errorLi
 		p.bitgetBaseWsClient.Login()
 		for {
 			if !p.bitgetBaseWsClient.LoginStatus {
+				applogger.Info("waiting for login...")
+				time.Sleep(2 * time.Second)
 				continue
 			}
 			break

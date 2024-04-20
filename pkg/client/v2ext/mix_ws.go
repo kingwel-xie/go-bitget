@@ -18,6 +18,30 @@ type MixAccountUpdateEvent struct {
 	UsdtEquity          string `json:"usdtEquity"`
 }
 
+type MixPositionUpdateEvent struct {
+	PosId            string `json:"posId"`
+	InstId           string `json:"instId"`
+	MarginCoin       string `json:"marginCoin"`
+	MarginSize       string `json:"marginSize"`
+	MarginMode       string `json:"marginMode"`
+	HoldSide         string `json:"holdSide"`
+	PosMode          string `json:"posMode"`
+	Total            string `json:"total"`
+	Available        string `json:"available"`
+	Frozen           string `json:"frozen"`
+	OpenPriceAvg     string `json:"openPriceAvg"`
+	Leverage         int    `json:"leverage"`
+	AchievedProfits  string `json:"achievedProfits"`
+	UnrealizedPL     string `json:"unrealizedPL"`
+	UnrealizedPLR    string `json:"unrealizedPLR"`
+	LiquidationPrice string `json:"liquidationPrice"`
+	KeepMarginRate   string `json:"keepMarginRate"`
+	MarginRate       string `json:"marginRate"`
+	CTime            string `json:"cTime"`
+	UTime            string `json:"uTime"`
+	AutoMargin       string `json:"autoMargin"`
+}
+
 type MixFillUpdateEvent struct {
 	OrderId     string `json:"orderId"`
 	TradeId     string `json:"tradeId"`
@@ -80,13 +104,14 @@ type MixOrderUpdateEvent struct {
 }
 
 type WsMixUserDataEvent struct {
-	Type          string `json:"type"`
-	Event         string `json:"event"`
-	Action        string `json:"action"`
-	Time          int64  `json:"ts"`
-	AccountUpdate []MixAccountUpdateEvent
-	FillUpdate    []MixFillUpdateEvent
-	OrderUpdate   []MixOrderUpdateEvent
+	Type           string `json:"type"`
+	Event          string `json:"event"`
+	Action         string `json:"action"`
+	Time           int64  `json:"ts"`
+	AccountUpdate  []MixAccountUpdateEvent
+	PositionUpdate []MixPositionUpdateEvent
+	FillUpdate     []MixFillUpdateEvent
+	OrderUpdate    []MixOrderUpdateEvent
 }
 
 // WsMixUserDataHandler handle user data event of MIX
@@ -127,6 +152,33 @@ func WsServeMixDataStream(instType string, handler WsMixUserDataHandler, errHand
 	}
 	client.SubscribeOne(req, wsAccountHandler)
 
+	// Position Update
+	wsPositionHandler := func(message string) {
+		var event struct {
+			GenericMessage
+			Data []MixPositionUpdateEvent `json:"data"`
+		}
+		err := json.Unmarshal([]byte(message), &event)
+		if err != nil {
+			errHandler(err)
+			return
+		}
+		handler(WsMixUserDataEvent{
+			Type:           event.Arg.InstType,
+			Event:          event.Arg.Channel,
+			Action:         event.Action,
+			Time:           event.Ts,
+			PositionUpdate: event.Data,
+		})
+	}
+	req = model.SubscribeReq{
+		InstType: instType,
+		Channel:  "positions",
+		Coin:     "default",
+	}
+	client.SubscribeOne(req, wsPositionHandler)
+
+	// Order Update
 	wsOrderHandler := func(message string) {
 		var event struct {
 			GenericMessage
