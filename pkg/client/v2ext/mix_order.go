@@ -9,7 +9,7 @@ import (
 // side: buy/sell, tradeSide: open/close, orderType: limit/market, marginMode: isolated/crossed
 // 双向持仓时，开多规则为：side=buy,tradeSide=open；开空规则为：side=sell,tradeSide=open；平多规则为：side=buy,tradeSide=close；平空规则为：side=sell,tradeSide=close
 // force: ioc 无法立即成交的部分就撤销, fok 无法全部立即成交就撤销, gtc 普通订单, 订单会一直有效，直到被成交或者取消, post_only 只做maker, 订单类型为限价单(limit)时必填，若省略则默认为gtc
-func (p *MixClient) PlaceOrder(productType, symbol, side, tradeSide, orderType string, marginMode, marginCoin string, size, price string) (*OrderResponse, error) {
+func (p *MixClient) PlaceOrder(productType, symbol, side, tradeSide, orderType string, postOnly bool, marginMode, marginCoin string, size, price string) (*OrderResponse, error) {
 	params := map[string]string{
 		"productType": productType,
 		"symbol":      symbol,
@@ -21,7 +21,11 @@ func (p *MixClient) PlaceOrder(productType, symbol, side, tradeSide, orderType s
 		"size":        size,
 	}
 	if orderType == "limit" {
-		params["force"] = "gtc"
+		if postOnly {
+			params["force"] = "post_only"
+		} else {
+			params["force"] = "gtc"
+		}
 		params["price"] = price
 	}
 

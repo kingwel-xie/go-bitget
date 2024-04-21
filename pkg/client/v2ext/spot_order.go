@@ -8,7 +8,7 @@ import (
 // PlaceOrder normal order
 // side: buy/sell, tradeSide: open/close, orderType: limit/market, marginMode: isolated/crossed
 // 双向持仓时，开多规则为：side=buy,tradeSide=open；开空规则为：side=sell,tradeSide=open；平多规则为：side=buy,tradeSide=close；平空规则为：side=sell,tradeSide=close
-func (p *SpotClient) PlaceOrder(symbol, side, orderType string, force string, size, price string) (*OrderResponse, error) {
+func (p *SpotClient) PlaceOrder(symbol, side, orderType string, postOnly bool, size, price string) (*OrderResponse, error) {
 	params := map[string]string{
 		"symbol":    symbol,
 		"side":      side,
@@ -16,7 +16,11 @@ func (p *SpotClient) PlaceOrder(symbol, side, orderType string, force string, si
 		"size":      size,
 	}
 	if orderType == "limit" {
-		params["force"] = force
+		if postOnly {
+			params["force"] = "post_only"
+		} else {
+			params["force"] = "gtc"
+		}
 		params["price"] = price
 	}
 
