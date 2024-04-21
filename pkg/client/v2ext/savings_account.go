@@ -2,6 +2,8 @@ package v2ext
 
 import (
 	"encoding/json"
+	"github.com/kingwel-xie/go-bitget/internal"
+	"strconv"
 )
 
 type SavingsAccountInfo struct {
@@ -54,7 +56,7 @@ type SavingsAssets struct {
 	EndID string `json:"endId"`
 }
 
-// SavingsAssets returns all assets, periodType: flexible/fixed
+// SavingsAssets returns all assets
 func (p *SpotClient) SavingsAssets(periodType string) (*SavingsAssets, error) {
 	params := map[string]string{
 		"periodType": periodType,
@@ -67,6 +69,104 @@ func (p *SpotClient) SavingsAssets(periodType string) (*SavingsAssets, error) {
 	var temp struct {
 		Response
 		Data *SavingsAssets
+	}
+	err = json.Unmarshal([]byte(resp), &temp)
+	if err != nil {
+		return nil, err
+	}
+	return temp.Data, err
+}
+
+type SavingsProduct struct {
+	ProductId     string `json:"productId"`
+	Coin          string `json:"coin"`
+	PeriodType    string `json:"periodType"` // flexible/fixed
+	Period        string `json:"period"`
+	ApyType       string `json:"apyType"`
+	AdvanceRedeem string `json:"advanceRedeem"`
+	SettleMethod  string `json:"settleMethod"`
+	ApyList       []struct {
+		RateLevel  string `json:"rateLevel"`
+		MinStepVal string `json:"minStepVal"`
+		MaxStepVal string `json:"maxStepVal"`
+		CurrentApy string `json:"currentApy"`
+	} `json:"apyList"`
+	Status       string `json:"status"`
+	ProductLevel string `json:"productLevel"`
+}
+
+// SavingsProduct returns all assets
+func (p *SpotClient) SavingsProduct(coin string) ([]*SavingsProduct, error) {
+	params := map[string]string{
+		"coin": coin,
+	}
+	resp, err := p.DoGet("/api/v2/earn/savings/product", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var temp struct {
+		Response
+		Data []*SavingsProduct
+	}
+	err = json.Unmarshal([]byte(resp), &temp)
+	if err != nil {
+		return nil, err
+	}
+	return temp.Data, err
+}
+
+type SavingsActionResult struct {
+	OrderId string `json:"orderId"`
+	Status  string `json:"status"`
+}
+
+// SavingsSubscribe subscribe to a product, periodType: flexible/fixed
+func (p *SpotClient) SavingsSubscribe(productId, periodType string, amount float64) (*SavingsActionResult, error) {
+	params := map[string]string{
+		"productId":  productId,
+		"periodType": periodType,
+		"amount":     strconv.FormatFloat(amount, 'f', -1, 64),
+	}
+	postBody, jsonErr := internal.ToJson(params)
+	if jsonErr != nil {
+		return nil, jsonErr
+	}
+	resp, err := p.DoPost("/api/v2/earn/savings/subscribe", postBody)
+	if err != nil {
+		return nil, err
+	}
+
+	var temp struct {
+		Response
+		Data *SavingsActionResult
+	}
+	err = json.Unmarshal([]byte(resp), &temp)
+	if err != nil {
+		return nil, err
+	}
+	return temp.Data, err
+}
+
+// SavingsRedeem redeem from a product, periodType: flexible/fixed
+func (p *SpotClient) SavingsRedeem(productId, periodType string, amount float64) (*SavingsActionResult, error) {
+	params := map[string]string{
+		"productId":  productId,
+		"periodType": periodType,
+		"amount":     strconv.FormatFloat(amount, 'f', -1, 64),
+	}
+	postBody, jsonErr := internal.ToJson(params)
+	if jsonErr != nil {
+		return nil, jsonErr
+	}
+	resp, err := p.DoPost("/api/v2/earn/savings/redeem", postBody)
+	if err != nil {
+		return nil, err
+	}
+
+	var temp struct {
+		Response
+		Data *SavingsActionResult
 	}
 	err = json.Unmarshal([]byte(resp), &temp)
 	if err != nil {
