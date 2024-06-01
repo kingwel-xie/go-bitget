@@ -70,6 +70,12 @@ type FundingRateItem struct {
 	FundingTime int64  `json:"fundingTime,string"`
 }
 
+type NextFundingTimeAndPeriodItem struct {
+	Symbol      	string `json:"symbol"`
+	NextFundingTime string `json:"nextFundingTime,string"`
+	RatePeriod 		string  `json:"fundingTime,string"`
+}
+
 func (p *MixClient) HistoryFundingRate(productType string, symbol string, pageNo int, pageSize int) ([]*FundingRateItem, error) {
 	params := map[string]string{
 		"productType": productType,
@@ -108,6 +114,28 @@ func (p *MixClient) CurrentFundingRate(productType string, symbol string) ([]*Fu
 	var temp struct {
 		Response
 		Data []*FundingRateItem
+	}
+	err = json.Unmarshal([]byte(resp), &temp)
+	if err != nil {
+		return nil, err
+	}
+	return temp.Data, err
+}
+
+func (p *MixClient) NextFundingTimeAndPeriod(productType string, symbol string) ([]*NextFundingTimeAndPeriodItem, error) {
+	params := map[string]string{
+		"productType": productType,
+		"symbol":      symbol,
+	}
+
+	resp, err := p.DoGet("/api/v2/mix/market/funding-time", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var temp struct {
+		Response
+		Data []*NextFundingTimeAndPeriodItem
 	}
 	err = json.Unmarshal([]byte(resp), &temp)
 	if err != nil {
