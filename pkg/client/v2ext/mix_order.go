@@ -74,3 +74,57 @@ func (p *MixClient) CancelOrder(productType, symbol, orderId string) (*OrderResp
 	}
 	return temp.Data, err
 }
+
+type MixPendingOrderEntry struct {
+	Symbol                 string `json:"symbol"`
+	Size                   string `json:"size"`
+	OrderId                string `json:"orderId"`
+	ClientOid              string `json:"clientOid"`
+	BaseVolume             string `json:"baseVolume"`
+	Fee                    string `json:"fee"`
+	Price                  string `json:"price"`
+	PriceAvg               string `json:"priceAvg"`
+	Status                 string `json:"status"`
+	Side                   string `json:"side"`
+	Force                  string `json:"force"`
+	TotalProfits           string `json:"totalProfits"`
+	PosSide                string `json:"posSide"`
+	MarginCoin             string `json:"marginCoin"`
+	QuoteVolume            string `json:"quoteVolume"`
+	Leverage               string `json:"leverage"`
+	MarginMode             string `json:"marginMode"`
+	EnterPointSource       string `json:"enterPointSource"`
+	TradeSide              string `json:"tradeSide"`
+	PosMode                string `json:"posMode"`
+	OrderType              string `json:"orderType"`
+	OrderSource            string `json:"orderSource"`
+	CTime                  int64  `json:"cTime,string"`
+	UTime                  int64  `json:"uTime,string"`
+	PresetStopSurplusPrice string `json:"presetStopSurplusPrice"`
+	PresetStopLossPrice    string `json:"presetStopLossPrice"`
+}
+
+func (p *MixClient) PendingOrders(productType, symbol, orderId string) ([]*MixPendingOrderEntry, error) {
+	params := map[string]string{
+		"productType": productType,
+		"symbol":      symbol,
+		"orderId":     orderId,
+	}
+	resp, err := p.DoGet("/api/v2/mix/order/orders-pending", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var temp struct {
+		Response
+		Data struct {
+			EntrustedList []*MixPendingOrderEntry `json:"entrustedList"`
+			EndId         string                  `json:"endId"`
+		}
+	}
+	err = json.Unmarshal([]byte(resp), &temp)
+	if err != nil {
+		return nil, err
+	}
+	return temp.Data.EntrustedList, err
+}

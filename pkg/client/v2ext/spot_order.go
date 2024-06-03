@@ -68,3 +68,43 @@ func (p *SpotClient) CancelOrder(symbol, orderId string) (*OrderResponse, error)
 	}
 	return temp.Data, err
 }
+
+type SpotPendingOrderEntry struct {
+	UserId           string      `json:"userId"`
+	Symbol           string      `json:"symbol"`
+	OrderId          string      `json:"orderId"`
+	ClientOid        string      `json:"clientOid"`
+	PriceAvg         string      `json:"priceAvg"`
+	Size             string      `json:"size"`
+	OrderType        string      `json:"orderType"`
+	Side             string      `json:"side"`
+	Status           string      `json:"status"`
+	BasePrice        string      `json:"basePrice"`
+	BaseVolume       string      `json:"baseVolume"`
+	QuoteVolume      string      `json:"quoteVolume"`
+	EnterPointSource string      `json:"enterPointSource"`
+	TriggerPrice     interface{} `json:"triggerPrice"`
+	TpslType         string      `json:"tpslType"`
+	CTime            int64       `json:"cTime,string"`
+}
+
+func (p *SpotClient) PendingOrders(symbol, orderId string) ([]*SpotPendingOrderEntry, error) {
+	params := map[string]string{
+		"symbol":  symbol,
+		"orderId": orderId,
+	}
+	resp, err := p.DoGet("/api/v2/spot/trade/unfilled-orders", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var temp struct {
+		Response
+		Data []*SpotPendingOrderEntry
+	}
+	err = json.Unmarshal([]byte(resp), &temp)
+	if err != nil {
+		return nil, err
+	}
+	return temp.Data, err
+}
